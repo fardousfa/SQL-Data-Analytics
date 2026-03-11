@@ -224,3 +224,78 @@ FROM(
 ORDER BY pct_return ASC;
 ```
 <img width="831" height="483" alt="image" src="https://github.com/user-attachments/assets/c0620963-bd97-4ada-bf5f-ced787dfe709" />
+
+### 8. Creating View: order_revenue_details
+
+```sql
+CREATE or ALTER VIEW order_summary AS
+SELECT 
+	o.OrderID,
+	DATETRUNC(MONTH,o.OrderDate) as order_month,
+	c.CustomerID,
+	c.CustomerName,
+	e.EmployeeID,
+	e.FullName,
+	r.RegionID,
+	r.CityName,
+	o.OrderStatus,
+	SUM(od.Quantity * od.UnitPrice * (1 - od.DiscountPct))as total_revenue
+FROM orders.Orders o
+LEFT JOIN Customer.Customers c
+	ON c.CustomerID = o.CustomerID 
+LEFT JOIN Employees.Employees e
+	ON e.EmployeeID = o.EmployeeID
+LEFT JOIN Region.Regions r
+	ON r.RegionID = o.RegionID
+LEFT JOIN orders.OrderItems od
+	ON od.OrderID = o.OrderID
+GROUP BY 	o.OrderID,
+		o.OrderDate,
+		c.CustomerID,
+		c.CustomerName,
+		e.EmployeeID,
+		e.FullName,
+		r.RegionID,
+		o.OrderStatus,
+		r.CityName;
+GO
+```
+<img width="1324" height="541" alt="image" src="https://github.com/user-attachments/assets/4dba1180-a094-487a-833f-861a0f41987d" />
+
+### 8. Creating View: customer_performance_details
+
+```sql
+
+CREATE OR ALTER VIEW dbo.customer_performance_details AS
+SELECT 
+	customerid,
+	customername,
+	last_order_date,
+	total_orders,
+	total_revenue,
+	CAST(total_revenue / total_orders as decimal (10,2)) as avg_order_revenue,
+	DATEDIFF(Month,last_order_date,getdate()) as month_since_last_order,
+	CASE when total_revenue <= 15000 THEN 'Low Value'
+		WHEN total_revenue between 15000 and 35000 THEN 'Mid Value'
+		ELSE 'High Value'
+		END as customer_category
+FROM(
+SELECT 
+	c.CustomerID,
+	c.CustomerName,
+	MAX(o.orderdate) as last_order_date,
+	SUM(Quantity) as total_orders,
+	CAST(SUM((Quantity *	UnitPrice)*(1-DiscountPct)) as decimal(10,2)) as total_revenue
+FROM orders.Orders o
+LEFT JOIN orders.OrderItems od
+ON o.OrderID = od.OrderID
+LEFT JOIN customer.Customers c
+ON c.CustomerID = o.CustomerID
+GROUP BY c.CustomerID,
+		c.CustomerName)t
+;
+
+```
+
+<img width="1114" height="720" alt="image" src="https://github.com/user-attachments/assets/8a5b911e-71b8-4bfa-8f81-237fd3a3daa4" />
+
