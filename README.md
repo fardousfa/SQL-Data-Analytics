@@ -299,3 +299,36 @@ GROUP BY c.CustomerID,
 
 <img width="1114" height="720" alt="image" src="https://github.com/user-attachments/assets/8a5b911e-71b8-4bfa-8f81-237fd3a3daa4" />
 
+### 9. For each sales territory, find the employee with the highest total revenue.
+```sql
+WITH cte_base AS(
+SELECT 
+	SalesTerritory,
+	e.FullName,
+	CONCAT('£',CAST(SUM((quantity * unitprice)*(1-od.discountpct)) as decimal(10,2))) AS total_rev
+FROM Employees.Employees e
+LEFT JOIN Region.Regions r
+	ON r.RegionID = e.RegionID
+LEFT JOIN orders.orders ord
+	ON ord.EmployeeID = e.EmployeeID
+LEFT JOIN orders.OrderItems od
+	ON od.OrderID=ord.OrderID
+GROUP BY SalesTerritory,
+	e.FullName
+),
+rank_cte AS(
+SELECT *,
+	ROW_NUMBER() OVER(PARTITION BY salesterritory ORDER BY total_rev DESC) AS Ranks
+FROM cte_base)
+
+SELECT
+	SalesTerritory,
+	FullName,
+	total_rev
+FROM rank_cte
+WHERE Ranks = 1
+ORDER BY total_rev;
+
+```
+<img width="579" height="274" alt="image" src="https://github.com/user-attachments/assets/5019895a-38d1-488f-a298-17b56a179d9e" />
+
